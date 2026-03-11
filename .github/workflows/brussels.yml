@@ -3,14 +3,12 @@ name: Build Brussels Agenda
 on:
   workflow_dispatch:
   schedule:
-    # GitHub Actions schedules use UTC. :contentReference[oaicite:2]{index=2}
-    # Morning Brussels pass (roughly): 06:15 UTC Mon–Fri
+    # Weekdays only (Mon–Fri). Times are UTC.
     - cron: "15 6 * * 1-5"
-    # Afternoon Brussels pass (roughly): 15:15 UTC Mon–Fri
     - cron: "15 15 * * 1-5"
 
 permissions:
-  contents: write  # allow committing brussels.ics/csv back to the repo :contentReference[oaicite:3]{index=3}
+  contents: write
 
 jobs:
   build:
