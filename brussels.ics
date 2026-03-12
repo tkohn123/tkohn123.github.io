@@ -1,126 +1,32 @@
 BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Brussels News Calendar (prototype)//EN
+PRODID:-//TK Brussels Agenda//EN
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
-X-WR-CALNAME:Brussels News Calendar (Prototype)
+X-WR-CALNAME:Brussels Agenda (AUTO)
 X-WR-TIMEZONE:Europe/Brussels
-BEGIN:VTIMEZONE
-TZID:Europe/Brussels
-X-LIC-LOCATION:Europe/Brussels
-BEGIN:DAYLIGHT
-TZOFFSETFROM:+0100
-TZOFFSETTO:+0200
-TZNAME:CEST
-DTSTART:19700329T020000
-RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU
-END:DAYLIGHT
-BEGIN:STANDARD
-TZOFFSETFROM:+0200
-TZOFFSETTO:+0100
-TZNAME:CET
-DTSTART:19701025T030000
-RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU
-END:STANDARD
-END:VTIMEZONE
-
 BEGIN:VEVENT
-UID:ep-keydebate-20260311T090000@brussels-news-calendar
-DTSTAMP:20260311T120000Z
-SUMMARY:EP Plenary (Strasbourg) - Key debate: EUCO prep & Middle East
-DTSTART;TZID=Europe/Brussels:20260311T090000
-DTEND;TZID=Europe/Brussels:20260311T115000
-LOCATION:Strasbourg (European Parliament)
-DESCRIPTION:Joint debate - EUCO and situation in the Middle East: Preparation of the European Council meeting of 19-20 March 2026; and debate on the US-Israel military operation against the Iranian regime, its consequences and the need to support the people of Iran.\nSource: https://www.europarl.europa.eu/news/en/agenda/weekly-agenda
-URL:https://www.europarl.europa.eu/news/en/agenda/weekly-agenda
+UID:8500208979396150484@tkohn123
+DTSTAMP:20260312T182706Z
+SUMMARY:EP | Formal sitting
+DTSTART;TZID=Europe/Brussels:20260320T120000
+DTEND;TZID=Europe/Brussels:20260320T123000
+DESCRIPTION:Source: https://www.europarl.europa.eu/news/en/agenda/weekly-agenda
 END:VEVENT
-
 BEGIN:VEVENT
-UID:ep-formalsitting-pashinyan-20260311T120000@brussels-news-calendar
-DTSTAMP:20260311T120000Z
-SUMMARY:EP Formal sitting (Strasbourg) - Address by PM of Armenia Nikol Pashinyan
-DTSTART;TZID=Europe/Brussels:20260311T120000
-DTEND;TZID=Europe/Brussels:20260311T123000
-LOCATION:Strasbourg (European Parliament)
-DESCRIPTION:Formal sitting address by Nikol Pashinyan, Prime Minister of Armenia.\nSource: https://www.europarl.europa.eu/news/en/agenda/weekly-agenda
-URL:https://www.europarl.europa.eu/news/en/agenda/weekly-agenda
+UID:6533027209632183895@tkohn123
+DTSTAMP:20260312T182706Z
+SUMMARY:EP | VOTES
+DTSTART;TZID=Europe/Brussels:20260320T123000
+DTEND;TZID=Europe/Brussels:20260320T133000
+DESCRIPTION:Source: https://www.europarl.europa.eu/news/en/agenda/weekly-agenda
 END:VEVENT
-
 BEGIN:VEVENT
-UID:costa-baku-20260311@brussels-news-calendar
-DTSTAMP:20260311T120000Z
-SUMMARY:European Council President Costa - Official visit to Baku; meeting Aliyev; G7 VC
-DTSTART;VALUE=DATE:20260311
-DTEND;VALUE=DATE:20260312
-LOCATION:Baku, Azerbaijan
-DESCRIPTION:Official visit. Meeting with President Ilham Aliyev (followed by press point). Video conference of G7 leaders.\nSource: https://www.consilium.europa.eu/en/european-council/president/calendar/
-URL:https://www.consilium.europa.eu/en/european-council/president/calendar/
+UID:2661976404370987744@tkohn123
+DTSTAMP:20260312T182706Z
+SUMMARY:EP | Debates (or at the end of the votes)
+DTSTART;TZID=Europe/Brussels:20260320T133000
+DTEND;TZID=Europe/Brussels:20260320T230000
+DESCRIPTION:Source: https://www.europarl.europa.eu/news/en/agenda/weekly-agenda
 END:VEVENT
-
-BEGIN:VEVENT
-UID:ribera-berlin-20260311@brussels-news-calendar
-DTSTAMP:20260311T120000Z
-SUMMARY:EVP Ribera - Berlin programme (speech/NGO roundtable/ministerial meeting)
-DTSTART;VALUE=DATE:20260311
-DTEND;VALUE=DATE:20260312
-LOCATION:Berlin, Germany
-DESCRIPTION:EVP Teresa Ribera: online speech (Ditchley Park European Climate Philanthropy convening); roundtable with NGOs organised by GermanWatch; meeting with German Federal Minister for Economic Affairs and Energy Katherina Reiche.\nSource: https://commission.europa.eu/about/organisation/college-commissioners/calendar-items-president-and-commissioners_en
-URL:https://commission.europa.eu/about/organisation/college-commissioners/calendar-items-president-and-commissioners_en
-END:VEVENT
-
-BEGIN:VEVENT
-UID:kubilius-papikyan-20260313@brussels-news-calendar
-DTSTAMP:20260311T120000Z
-SUMMARY:Commissioner Kubilius receives Armenian Defence Minister Suren Papikyan
-DTSTART;VALUE=DATE:20260313
-DTEND;VALUE=DATE:20260314
-LOCATION:Brussels, Belgium
-DESCRIPTION:Commissioner Andrius Kubilius receives Mr Suren Papikyan, Minister for Defence of Armenia.\nSource: https://commission.europa.eu/about/organisation/college-commissioners/calendar-items-president-and-commissioners_en?page=3
-URL:https://commission.europa.eu/about/organisation/college-commissioners/calendar-items-president-and-commissioners_en?page=3
-END:VEVENT
-
-BEGIN:VEVENT
-UID:kubilius-bedex-20260313@brussels-news-calendar
-DTSTAMP:20260311T120000Z
-SUMMARY:Commissioner Kubilius - Closing event of BEDEX defence exhibition/conference
-DTSTART;VALUE=DATE:20260313
-DTEND;VALUE=DATE:20260314
-LOCATION:Brussels, Belgium
-DESCRIPTION:Commissioner Andrius Kubilius participates in the closing event of BEDEX defence exhibition and conference (together with Mr Theo Francken, Minister for Defence of Belgium).\nSource: https://commission.europa.eu/about/organisation/college-commissioners/calendar-items-president-and-commissioners_en?page=3
-URL:https://commission.europa.eu/about/organisation/college-commissioners/calendar-items-president-and-commissioners_en?page=3
-END:VEVENT
-
-BEGIN:VEVENT
-UID:fac-20260316@brussels-news-calendar
-DTSTAMP:20260311T120000Z
-SUMMARY:Foreign Affairs Council (FAC)
-DTSTART;VALUE=DATE:20260316
-DTEND;VALUE=DATE:20260317
-LOCATION:Brussels, Belgium
-DESCRIPTION:Foreign Affairs Council meeting in Brussels. Chaired by EU High Representative for Foreign Affairs and Security Policy Kaja Kallas.\nSource: https://www.consilium.europa.eu/en/meetings/fac/2026/03/16/
-URL:https://www.consilium.europa.eu/en/meetings/fac/2026/03/16/
-END:VEVENT
-
-BEGIN:VEVENT
-UID:eurosummit-20260319@brussels-news-calendar
-DTSTAMP:20260311T120000Z
-SUMMARY:Euro Summit
-DTSTART;VALUE=DATE:20260319
-DTEND;VALUE=DATE:20260320
-LOCATION:Brussels, Belgium
-DESCRIPTION:Euro Summit (Heads of State or Government of the euro area).\nSource: https://www.consilium.europa.eu/en/meetings/euro-summit/2026/03/19/
-URL:https://www.consilium.europa.eu/en/meetings/euro-summit/2026/03/19/
-END:VEVENT
-
-BEGIN:VEVENT
-UID:europeancouncil-20260319-20260320@brussels-news-calendar
-DTSTAMP:20260311T120000Z
-SUMMARY:European Council meeting (2 days)
-DTSTART;VALUE=DATE:20260319
-DTEND;VALUE=DATE:20260321
-LOCATION:Brussels, Belgium
-DESCRIPTION:European Council meeting in Brussels (19-20 March 2026).\nSource: https://www.consilium.europa.eu/en/meetings/european-council/2026/03/19-20/
-URL:https://www.consilium.europa.eu/en/meetings/european-council/2026/03/19-20/
-END:VEVENT
-
 END:VCALENDAR
