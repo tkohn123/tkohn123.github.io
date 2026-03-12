@@ -2,7 +2,7 @@
 
 An automatically generated calendar tracking key meetings, events, and institutional activity in Brussels — including EU institutions, Council configurations, Commission events, Parliament sessions, and other relevant policy moments.
 
-🔗 Live site: [https://tkohn123.github.io/tkohn123.github.io](https://tkohn123.github.io/tkohn123.github.io)
+🔗 Live site: [https://tkohn123.github.io](https://tkohn123.github.io)
 
 ---
 
