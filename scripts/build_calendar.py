@@ -425,7 +425,36 @@ def write_csv(events: List[Event], path: str) -> None:
                 e.location,
                 e.url,
             ])
-
+def write_markdown(events, path="index.md"):
+    lines = []
+    today = now_brussels().strftime("%d %B %Y")
+    lines.append(f"# Brussels Agenda (Rolling 14 Days)")
+    lines.append(f"_Generated: {today} (Europe/Brussels)_")
+    lines.append("")
+    
+    # Group by date
+    events_sorted = sorted(events, key=lambda e: e.start)
+    current_date = None
+    
+    for e in events_sorted:
+        date_str = e.start.strftime("%A, %d %B %Y")
+        if date_str != current_date:
+            lines.append(f"## {date_str}")
+            lines.append("")
+            current_date = date_str
+        
+        if e.all_day:
+            time_part = "All day"
+        else:
+            time_part = f"{e.start.strftime('%H:%M')}–{e.end.strftime('%H:%M')}"
+        
+        lines.append(f"- **{time_part}** — {e.title}")
+        lines.append(f"  - Source: {e.url}")
+        lines.append("")
+    
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+        
 def main() -> int:
     start, end = date_window()
     all_events: List[Event] = []
@@ -454,7 +483,10 @@ def main() -> int:
         f.write(ics)
 
     write_csv(deduped, "brussels.csv")
+    write_markdown(deduped, "index.md")
+    write_markdown(deduped, "brussels.md")
     return 0
+    
 
 if __name__ == "__main__":
     sys.exit(main())
