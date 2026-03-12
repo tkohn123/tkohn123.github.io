@@ -3,10 +3,12 @@ from __future__ import annotations
 
 import csv
 import datetime as dt
+import hashlib
 import re
 import sys
 from dataclasses import dataclass
 from typing import List, Optional
+from urllib.parse import urljoin
 from zoneinfo import ZoneInfo
 
 import requests
@@ -95,54 +97,84 @@ def fetch(url: str) -> Optional[str]:
         print(f"[WARN] Failed to fetch {url}: {e}")
         return None
 
-
 def parse_euco_president_calendar() -> List[Event]:
     url = "https://www.consilium.europa.eu/en/european-council/president/calendar/"
     html = fetch(url)
     if not html:
         return []
         
-def parse_consilium_meetings() -> List[Event]:
-    configurations = {
-        "European Council": "european-council",
-        "Euro Summit": "euro-summit",
-        "Foreign Affairs Council": "fac",
-        "ECOFIN": "ecofin",
-        "Eurogroup": "eurogroup",
-    }
+    # TODO: Add specific BeautifulSoup scraping logic for the EUCO President's agenda here.
+    return []
 
+def parse_consilium_meetings() -> List[Event]:
+    url = "https://www.consilium.europa.eu/en/meetings/calendar/"
+    html = fetch(url)
+    if not html:
+        return []
+
+    soup = BeautifulSoup(html, "html.parser")
     events: List[Event] = []
 
-    start, end = date_window()
-    current = start.date()
+    start_window, end_window = date_window()
 
-    while current < end.date():
-        for label, slug in configurations.items():
-            url = f"https://www.consilium.europa.eu/en/meetings/{slug}/{current.year:04d}/{current.month:02d}/{current.day:02d}/"
+    # Regex to catch single dates, multi-day, and cross-month events
+    date_re = re.compile(
+        r"(\d{1,2})\s*(?:(January|February|March|April|May|June|July|August|September|October|November|December))?\s*(?:[–-])\s*(\d{1,2})?\s*(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})|"
+        r"(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})"
+    )
 
-            try:
-                r = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=10)
-                if r.status_code == 200:
-                    start_dt = dt.datetime(current.year, current.month, current.day, tzinfo=BRUSSELS)
-                    end_dt = start_dt + dt.timedelta(days=1)
+    for card in soup.select("a[href*='/meetings/']"):
+        title = card.get_text(" ", strip=True)
+        href = card.get("href", "")
+        full_url = urljoin("https://www.consilium.europa.eu", href)
 
-                    events.append(Event(
-                        title=f"CONSILIUM | {label}",
-                        start=start_dt,
-                        end=end_dt,
-                        all_day=True,
-                        location="Brussels",
-                        description=f"Source: {url}",
-                        url=url,
-                        source="CONSILIUM",
-                        priority="A"
-                    ))
-            except Exception:
-                pass
+        parent = card.find_parent()
+        if not parent:
+            continue
+            
+        text_blob = parent.get_text(" ", strip=True)
+        date_match = date_re.search(text_blob)
+        
+        if not date_match:
+            continue
 
-        current += dt.timedelta(days=1)
+        groups = date_match.groups()
+        
+        if groups[5]: # Single date match
+            d1 = int(groups[5])
+            m1_name = m2_name = groups[6]
+            year = int(groups[7])
+            d2 = d1
+        else: # Multi-day or cross-month match
+            d1 = int(groups[0])
+            m1_name = groups[1] if groups[1] else groups[3]
+            d2 = int(groups[2]) if groups[2] else d1
+            m2_name = groups[3]
+            year = int(groups[4])
+
+        try:
+            start_dt = dt.datetime(year, MONTHS[m1_name], d1, tzinfo=BRUSSELS)
+            end_dt = dt.datetime(year, MONTHS[m2_name], d2, tzinfo=BRUSSELS) + dt.timedelta(days=1)
+        except ValueError:
+            continue 
+
+        event = Event(
+            title=f"CONSILIUM | {title}",
+            start=start_dt,
+            end=end_dt,
+            all_day=True,
+            location="Brussels",
+            description=f"Source: {full_url}",
+            url=full_url,
+            source="CONSILIUM",
+            priority=priority_from_text(title),
+        )
+
+        if in_window(event, start_window, end_window):
+            events.append(event)
 
     return events
+
 def parse_ep_weekly_agenda() -> List[Event]:
     url = "https://www.europarl.europa.eu/news/en/agenda/weekly-agenda"
     html = fetch(url)
@@ -205,7 +237,12 @@ def build_ics(events: List[Event]) -> str:
 
     for e in sorted(events, key=lambda x: x.start):
         lines.append("BEGIN:VEVENT")
-        lines.append(f"UID:{abs(hash((e.title, e.start.isoformat())))}@tkohn123")
+        
+        # We encode the title and start time into a consistent MD5 hash
+        unique_string = f"{e.title}-{e.start.isoformat()}".encode('utf-8')
+        event_uid = hashlib.md5(unique_string).hexdigest()
+        
+        lines.append(f"UID:{event_uid}@tkohn123")
         lines.append(f"DTSTAMP:{stamp}")
         lines.append(f"SUMMARY:{esc(e.title)}")
 
@@ -229,7 +266,6 @@ def write_csv(events: List[Event]):
         for e in sorted(events, key=lambda x: x.start):
             w.writerow([e.priority, e.start.isoformat(), e.end.isoformat(), e.title, e.source, e.url])
 
-
 def write_html(events: List[Event], path="index.html"):
     lines = []
     lines.append("<!DOCTYPE html>")
@@ -237,18 +273,6 @@ def write_html(events: List[Event], path="index.html"):
     lines.append("<head>")
     lines.append("<meta charset='utf-8'>")
     lines.append("<title>Brussels Agenda</title>")
-
-    # --- PASSWORD PROTECTION ---
-    lines.append("<script>")
-    lines.append("const password = 'Brussels';")
-    lines.append("const userInput = prompt('Enter password:');")
-    lines.append("if (userInput !== password) {")
-    lines.append("  document.write('Access denied');")
-    lines.append("  document.stop();")
-    lines.append("}")
-    lines.append("</script>")
-    # ----------------------------
-
     lines.append("</head>")
     lines.append("<body>")
     
@@ -268,7 +292,6 @@ def write_html(events: List[Event], path="index.html"):
 
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
-
 
 def main() -> int:
     start, end = date_window()
