@@ -103,88 +103,46 @@ def parse_euco_president_calendar() -> List[Event]:
         return []
         
 def parse_consilium_meetings() -> List[Event]:
-    base_pages = {
-        "European Council": "https://www.consilium.europa.eu/en/meetings/european-council/",
-        "Euro Summit": "https://www.consilium.europa.eu/en/meetings/euro-summit/",
-        "Foreign Affairs Council": "https://www.consilium.europa.eu/en/meetings/fac/",
-        "ECOFIN": "https://www.consilium.europa.eu/en/meetings/ecofin/",
-        "Eurogroup": "https://www.consilium.europa.eu/en/meetings/eurogroup/",
+    configurations = {
+        "European Council": "european-council",
+        "Euro Summit": "euro-summit",
+        "Foreign Affairs Council": "fac",
+        "ECOFIN": "ecofin",
+        "Eurogroup": "eurogroup",
     }
 
     events: List[Event] = []
 
-    for label, url in base_pages.items():
-        html = fetch(url)
-        if not html:
-            continue
+    start, end = date_window()
+    current = start.date()
 
-        soup = BeautifulSoup(html, "html.parser")
+    while current < end.date():
+        for label, slug in configurations.items():
+            url = f"https://www.consilium.europa.eu/en/meetings/{slug}/{current.year:04d}/{current.month:02d}/{current.day:02d}/"
 
-        # Look for meeting links containing date patterns like 2026/03/16
-        for a in soup.select("a[href]"):
-            href = a.get("href", "")
-            text = a.get_text(" ", strip=True)
+            try:
+                r = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=10)
+                if r.status_code == 200:
+                    start_dt = dt.datetime(current.year, current.month, current.day, tzinfo=BRUSSELS)
+                    end_dt = start_dt + dt.timedelta(days=1)
 
-            if not href or not re.search(r"/\d{4}/\d{2}/\d{2}", href):
-                continue
+                    events.append(Event(
+                        title=f"CONSILIUM | {label}",
+                        start=start_dt,
+                        end=end_dt,
+                        all_day=True,
+                        location="Brussels",
+                        description=f"Source: {url}",
+                        url=url,
+                        source="CONSILIUM",
+                        priority="A"
+                    ))
+            except Exception:
+                pass
 
-            link = "https://www.consilium.europa.eu" + href if href.startswith("/") else href
-
-            # Extract date from URL
-            m = re.search(r"/(\d{4})/(\d{2})/(\d{2})", href)
-            if not m:
-                continue
-
-            year, month, day = map(int, m.groups())
-            start = dt.datetime(year, month, day, tzinfo=BRUSSELS)
-            end = start + dt.timedelta(days=1)
-
-            events.append(Event(
-                title=f"CONSILIUM | {label}",
-                start=start,
-                end=end,
-                all_day=True,
-                location="Brussels",
-                description=f"Source: {link}",
-                url=link,
-                source="CONSILIUM",
-                priority="A"
-            ))
+        current += dt.timedelta(days=1)
 
     return events
-    soup = BeautifulSoup(html, "html.parser")
-    text = soup.get_text("\n", strip=True)
-    lines = [ln.strip() for ln in text.split("\n") if ln.strip()]
-
-    date_re = re.compile(r"\b(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})\b")
-
-    events = []
-    current_date: Optional[dt.date] = None
-
-    for ln in lines:
-        m = date_re.search(ln)
-        if m:
-            current_date = dt.date(int(m.group(3)), MONTHS[m.group(2)], int(m.group(1)))
-            continue
-
-        if current_date and len(ln) > 10:
-            start = dt.datetime(current_date.year, current_date.month, current_date.day, tzinfo=BRUSSELS)
-            end = start + dt.timedelta(days=1)
-
-            events.append(Event(
-                title=f"EUCO | President Costa: {ln}",
-                start=start,
-                end=end,
-                all_day=True,
-                location="(See source)",
-                description=f"Source: {url}",
-                url=url,
-                source="EUCO",
-                priority=priority_from_text(ln),
-            ))
-
-    return events
-
 def parse_ep_weekly_agenda() -> List[Event]:
     url = "https://www.europarl.europa.eu/news/en/agenda/weekly-agenda"
     html = fetch(url)
