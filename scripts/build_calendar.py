@@ -278,16 +278,29 @@ def write_csv(events: List[Event]):
         for e in sorted(events, key=lambda x: x.start):
             w.writerow([e.priority, e.start.isoformat(), e.end.isoformat(), e.title, e.source, e.url])
 
+
 def write_html(events: List[Event], path="index.html"):
     lines = []
     lines.append("<!DOCTYPE html>")
-    lines.append("<html><head>")
+    lines.append("<html>")
+    lines.append("<head>")
     lines.append("<meta charset='utf-8'>")
     lines.append("<title>Brussels Agenda</title>")
-    lines.append("</head><body>")
-    lines.append("<h1>Brussels Agenda (Rolling 14 Days)</h1>")
-    lines.append(f"<p><em>Generated: {now_brussels().strftime('%d %B %Y')} (Europe/Brussels)</em></p>")
 
+    # --- PASSWORD PROTECTION ---
+    lines.append("<script>")
+    lines.append("const password = 'Brussels';")
+    lines.append("const userInput = prompt('Enter password:');")
+    lines.append("if (userInput !== password) {")
+    lines.append("  document.write('Access denied');")
+    lines.append("  document.stop();")
+    lines.append("}")
+    lines.append("</script>")
+    # ----------------------------
+
+    lines.append("</head>")
+    lines.append("<body>")
+    
     current_date = None
 
     for e in sorted(events, key=lambda x: x.start):
