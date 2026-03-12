@@ -13,7 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 
 BRUSSELS = ZoneInfo("Europe/Brussels")
-ROLLING_DAYS = 14
+ROLLING_DAYS = 30
 
 USER_AGENT = "Mozilla/5.0 (compatible; BrusselsAgendaBot/1.0; +https://tkohn123.github.io/)"
 
