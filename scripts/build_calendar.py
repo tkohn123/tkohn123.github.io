@@ -19,6 +19,8 @@ Notes:
 """
 from __future__ import annotations
 
+import time
+import random
 import csv
 import dataclasses
 import datetime as dt
@@ -101,10 +103,41 @@ def priority_from_text(text: str) -> str:
         return "A"
     return "B"
 
+import time
+import random
+import requests
+
+SESSION = requests.Session()
+
+DEFAULT_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+}
+
 def fetch(url: str) -> str:
-    r = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=30)
-    r.raise_for_status()
-    return r.text
+    last_exc = None
+    for attempt in range(4):
+        try:
+            # small jitter helps avoid simple bot detection
+            time.sleep(0.3 + random.random() * 0.4)
+
+            response = SESSION.get(
+                url,
+                headers=DEFAULT_HEADERS,
+                timeout=30,
+            )
+            response.raise_for_status()
+            return response.text
+
+        except Exception as exc:
+            last_exc = exc
+            # exponential backoff
+            time.sleep(2 ** attempt)
+
+    raise last_exc
 
 def parse_consilium_meetings() -> List[Event]:
     # Consilium meetings calendar page (contains multiple meeting types)
