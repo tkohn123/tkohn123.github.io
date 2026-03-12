@@ -95,70 +95,63 @@ def fetch(url: str) -> Optional[str]:
         print(f"[WARN] Failed to fetch {url}: {e}")
         return None
 
-def parse_consilium_meetings() -> List[Event]:
-    url = "https://www.consilium.europa.eu/en/meetings/calendar/"
-    html = fetch(url)
-    if not html:
-        return []
-
-    soup = BeautifulSoup(html, "html.parser")
-    events: List[Event] = []
-
-    for a in soup.select("a[href]"):
-        text = a.get_text(" ", strip=True)
-        if not text:
-            continue
-
-        t = norm(text)
-        if not any(k in t for k in COUNCIL_KEEP_CONFIGS):
-            continue
-
-        href = a["href"]
-        link = "https://www.consilium.europa.eu" + href if href.startswith("/") else href
-
-        detail_html = fetch(link)
-        if not detail_html:
-            continue
-
-        dsoup = BeautifulSoup(detail_html, "html.parser")
-        title_tag = dsoup.find("h1")
-        title = title_tag.get_text(" ", strip=True) if title_tag else text
-
-        dates = []
-        for ttag in dsoup.select("time[datetime]"):
-            d = ttag.get("datetime", "")[:10]
-            if re.match(r"^\d{4}-\d{2}-\d{2}$", d):
-                dates.append(d)
-
-        dates = sorted(set(dates))
-        if not dates:
-            continue
-
-        d0 = dt.date.fromisoformat(dates[0])
-        d1 = dt.date.fromisoformat(dates[-1])
-        start = dt.datetime(d0.year, d0.month, d0.day, tzinfo=BRUSSELS)
-        end = dt.datetime(d1.year, d1.month, d1.day, tzinfo=BRUSSELS) + dt.timedelta(days=1)
-
-        events.append(Event(
-            title=f"CONSILIUM | {title}",
-            start=start,
-            end=end,
-            all_day=True,
-            location="Brussels",
-            description=f"Source: {link}",
-            url=link,
-            source="CONSILIUM",
-            priority="A"
-        ))
-
-    return events
 
 def parse_euco_president_calendar() -> List[Event]:
     url = "https://www.consilium.europa.eu/en/european-council/president/calendar/"
     html = fetch(url)
     if not html:
         return []
+        
+def parse_consilium_meetings() -> List[Event]:
+    base_pages = {
+        "European Council": "https://www.consilium.europa.eu/en/meetings/european-council/",
+        "Euro Summit": "https://www.consilium.europa.eu/en/meetings/euro-summit/",
+        "Foreign Affairs Council": "https://www.consilium.europa.eu/en/meetings/fac/",
+        "ECOFIN": "https://www.consilium.europa.eu/en/meetings/ecofin/",
+        "Eurogroup": "https://www.consilium.europa.eu/en/meetings/eurogroup/",
+    }
 
+    events: List[Event] = []
+
+    for label, url in base_pages.items():
+        html = fetch(url)
+        if not html:
+            continue
+
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Look for meeting links containing date patterns like 2026/03/16
+        for a in soup.select("a[href]"):
+            href = a.get("href", "")
+            text = a.get_text(" ", strip=True)
+
+            if not href or not re.search(r"/\d{4}/\d{2}/\d{2}", href):
+                continue
+
+            link = "https://www.consilium.europa.eu" + href if href.startswith("/") else href
+
+            # Extract date from URL
+            m = re.search(r"/(\d{4})/(\d{2})/(\d{2})", href)
+            if not m:
+                continue
+
+            year, month, day = map(int, m.groups())
+            start = dt.datetime(year, month, day, tzinfo=BRUSSELS)
+            end = start + dt.timedelta(days=1)
+
+            events.append(Event(
+                title=f"CONSILIUM | {label}",
+                start=start,
+                end=end,
+                all_day=True,
+                location="Brussels",
+                description=f"Source: {link}",
+                url=link,
+                source="CONSILIUM",
+                priority="A"
+            ))
+
+    return events
     soup = BeautifulSoup(html, "html.parser")
     text = soup.get_text("\n", strip=True)
     lines = [ln.strip() for ln in text.split("\n") if ln.strip()]
