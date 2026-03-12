@@ -278,28 +278,33 @@ def write_csv(events: List[Event]):
         for e in sorted(events, key=lambda x: x.start):
             w.writerow([e.priority, e.start.isoformat(), e.end.isoformat(), e.title, e.source, e.url])
 
-def write_markdown(events: List[Event], path="index.md"):
+def write_html(events: List[Event], path="index.html"):
     lines = []
-    lines.append("# Brussels Agenda (Rolling 14 Days)")
-    lines.append(f"_Generated: {now_brussels().strftime('%d %B %Y')} (Europe/Brussels)_")
-    lines.append("")
+    lines.append("<!DOCTYPE html>")
+    lines.append("<html><head>")
+    lines.append("<meta charset='utf-8'>")
+    lines.append("<title>Brussels Agenda</title>")
+    lines.append("</head><body>")
+    lines.append("<h1>Brussels Agenda (Rolling 14 Days)</h1>")
+    lines.append(f"<p><em>Generated: {now_brussels().strftime('%d %B %Y')} (Europe/Brussels)</em></p>")
 
     current_date = None
 
     for e in sorted(events, key=lambda x: x.start):
         date_str = e.start.strftime("%A, %d %B %Y")
         if date_str != current_date:
-            lines.append(f"## {date_str}")
-            lines.append("")
+            lines.append(f"<h2>{date_str}</h2>")
             current_date = date_str
 
         time_part = "All day" if e.all_day else f"{e.start.strftime('%H:%M')}–{e.end.strftime('%H:%M')}"
-        lines.append(f"- **{time_part}** — {e.title}")
-        lines.append(f"  - Source: {e.url}")
-        lines.append("")
+        lines.append(f"<p><strong>{time_part}</strong> — {e.title}<br>")
+        lines.append(f"<small><a href='{e.url}' target='_blank'>Source</a></small></p>")
+
+    lines.append("</body></html>")
 
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
+
 
 def main() -> int:
     start, end = date_window()
@@ -324,7 +329,7 @@ def main() -> int:
         f.write(build_ics(deduped))
 
     write_csv(deduped)
-    write_markdown(deduped, "index.html")
+    write_html(deduped, "index.html")
     write_markdown(deduped, "brussels.md")
     return 0
 
