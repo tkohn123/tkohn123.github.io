@@ -117,27 +117,18 @@ DEFAULT_HEADERS = {
     "Pragma": "no-cache",
 }
 
-def fetch(url: str) -> str:
-    last_exc = None
-    for attempt in range(4):
-        try:
-            # small jitter helps avoid simple bot detection
-            time.sleep(0.3 + random.random() * 0.4)
+def fetch(url: str) -> str | None:
+    try:
+        response = requests.get(url, headers={"User-Agent": UA}, timeout=30)
+        if response.status_code != 200:
+            print(f"[WARN] {url} returned {response.status_code}")
+            return None
+        return response.text
+    except Exception as e:
+        print(f"[WARN] Failed to fetch {url}: {e}")
+        return None
 
-            response = SESSION.get(
-                url,
-                headers=DEFAULT_HEADERS,
-                timeout=30,
-            )
-            response.raise_for_status()
-            return response.text
 
-        except Exception as exc:
-            last_exc = exc
-            # exponential backoff
-            time.sleep(2 ** attempt)
-
-    raise last_exc
 
 def parse_consilium_meetings() -> List[Event]:
     # Consilium meetings calendar page (contains multiple meeting types)
