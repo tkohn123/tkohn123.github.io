@@ -134,8 +134,10 @@ def parse_consilium_meetings() -> List[Event]:
     # Consilium meetings calendar page (contains multiple meeting types)
     url = "https://www.consilium.europa.eu/en/meetings/calendar/"
     html = fetch(url)
+    if not html:
+        return []
     soup = BeautifulSoup(html, "html.parser")
-
+    
     events: List[Event] = []
     # The site changes structure occasionally; we do a best-effort scrape:
     for a in soup.select("a[href]"):
