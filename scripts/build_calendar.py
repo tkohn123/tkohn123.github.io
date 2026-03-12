@@ -324,9 +324,8 @@ def main() -> int:
         f.write(build_ics(deduped))
 
     write_csv(deduped)
-    write_markdown(deduped, "index.md")
+    write_markdown(deduped, "index.html")
     write_markdown(deduped, "brussels.md")
-
     return 0
 
 if __name__ == "__main__":
