@@ -330,7 +330,6 @@ def main() -> int:
 
     write_csv(deduped)
     write_html(deduped, "index.html")
-    write_markdown(deduped, "brussels.md")
     return 0
 
 if __name__ == "__main__":
