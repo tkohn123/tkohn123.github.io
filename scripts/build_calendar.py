@@ -205,6 +205,9 @@ def parse_consilium_meetings() -> List[Event]:
 def parse_euco_president_calendar() -> List[Event]:
     url = "https://www.consilium.europa.eu/en/european-council/president/calendar/"
     html = fetch(url)
+    if not html:
+        return []
+    
     soup = BeautifulSoup(html, "html.parser")
     events: List[Event] = []
 
@@ -249,6 +252,8 @@ def parse_euco_president_calendar() -> List[Event]:
 def parse_ep_weekly_agenda() -> List[Event]:
     url = "https://www.europarl.europa.eu/news/en/agenda/weekly-agenda"
     html = fetch(url)
+    if not html:
+        return []
     soup = BeautifulSoup(html, "html.parser")
 
     events: List[Event] = []
@@ -302,6 +307,8 @@ def parse_commission_calendar_items() -> List[Event]:
     for url in urls:
         try:
             html = fetch(url)
+        if not html:
+            continue
         except Exception:
             continue
         soup = BeautifulSoup(html, "html.parser")
