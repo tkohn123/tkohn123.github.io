@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     # Weekdays only (Mon–Fri). Times are UTC.
-    - cron: "15 6 * * 1-5"
+#    - cron: "15 6 * * 1-5"
 #    - cron: "15 15 * * 1-5"
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
