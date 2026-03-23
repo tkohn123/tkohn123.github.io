@@ -106,6 +106,32 @@ GENERIC_LINES = {
 
 LOCAL_COMMISSION_PLACES = {"brussels", "bruxelles", "strasbourg", "luxembourg"}
 
+EUCO_LOCAL_TIMEZONES = {
+    "amsterdam": "Europe/Amsterdam",
+    "azerbaijan": "Asia/Baku",
+    "baku": "Asia/Baku",
+    "belgium": "Europe/Brussels",
+    "berlin": "Europe/Berlin",
+    "brussels": "Europe/Brussels",
+    "copenhagen": "Europe/Copenhagen",
+    "france": "Europe/Paris",
+    "germany": "Europe/Berlin",
+    "hamburg": "Europe/Berlin",
+    "lisbon": "Europe/Lisbon",
+    "luxembourg": "Europe/Luxembourg",
+    "madrid": "Europe/Madrid",
+    "paris": "Europe/Paris",
+    "poland": "Europe/Warsaw",
+    "porto": "Europe/Lisbon",
+    "portugal": "Europe/Lisbon",
+    "rome": "Europe/Rome",
+    "spain": "Europe/Madrid",
+    "stockholm": "Europe/Stockholm",
+    "sweden": "Europe/Stockholm",
+    "the hague": "Europe/Amsterdam",
+    "warsaw": "Europe/Warsaw",
+}
+
 PRIORITY_KEYWORDS = {
     "european council",
     "euro summit",
@@ -201,6 +227,33 @@ def add_hours(base_date: dt.date, clock: str, hours: int = 1) -> tuple[dt.dateti
     hour, minute = map(int, clock.split(":"))
     start = dt.datetime(base_date.year, base_date.month, base_date.day, hour, minute, tzinfo=BRUSSELS)
     return start, start + dt.timedelta(hours=hours)
+
+
+def add_hours_in_timezone(
+    base_date: dt.date,
+    clock: str,
+    source_tz: ZoneInfo,
+    hours: int = 1,
+) -> tuple[dt.datetime, dt.datetime]:
+    hour, minute = map(int, clock.split(":"))
+    start_local = dt.datetime(
+        base_date.year,
+        base_date.month,
+        base_date.day,
+        hour,
+        minute,
+        tzinfo=source_tz,
+    )
+    end_local = start_local + dt.timedelta(hours=hours)
+    return start_local.astimezone(BRUSSELS), end_local.astimezone(BRUSSELS)
+
+
+def resolve_euco_timezone(location: str) -> ZoneInfo:
+    lowered = norm(location)
+    for keyword, tz_name in EUCO_LOCAL_TIMEZONES.items():
+        if keyword in lowered:
+            return ZoneInfo(tz_name)
+    return BRUSSELS
 
 
 def all_day_range(start_date: dt.date, end_date: Optional[dt.date] = None) -> tuple[dt.datetime, dt.datetime]:
@@ -329,11 +382,12 @@ def parse_euco_president_calendar() -> list[Event]:
     date_re = re.compile(r"^(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})$")
     weekday_re = re.compile(r"^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s+")
     timed_re = re.compile(r"^(\d{1,2}:\d{2})\s+(.+)$")
-    location_re = re.compile(r"^[A-Z][^\n]+,\s*[^\n]+(?:\(local time\))?$")
+    location_re = re.compile(r"^[A-Z][^\n]+,\s*[^\n]+(?:\s*\(local time\))?$")
 
     events: list[Event] = []
     current_date: Optional[dt.date] = None
     current_location = ""
+    current_location_is_local_time = False
     start_window, end_window = date_window()
 
     for raw_line in lines:
@@ -346,6 +400,7 @@ def parse_euco_president_calendar() -> list[Event]:
             day, month_name, year = date_match.groups()
             current_date = dt.date(int(year), MONTHS[month_name], int(day))
             current_location = ""
+            current_location_is_local_time = False
             continue
 
         if current_date is None:
@@ -360,20 +415,34 @@ def parse_euco_president_calendar() -> list[Event]:
             continue
 
         if location_re.match(line) and not timed_re.match(line):
-            current_location = line.replace("(local time)", "").strip()
+            current_location_is_local_time = "(local time)" in line.lower()
+            current_location = re.sub(r"\s*\(local time\)\s*$", "", line, flags=re.IGNORECASE).strip()
             continue
 
         timed_match = timed_re.match(line)
         if timed_match:
             clock, title = timed_match.groups()
-            start_dt, end_dt = add_hours(current_date, clock, 1)
+            if current_location_is_local_time and current_location:
+                start_dt, end_dt = add_hours_in_timezone(
+                    current_date,
+                    clock,
+                    resolve_euco_timezone(current_location),
+                    1,
+                )
+                description = (
+                    "President of the European Council schedule "
+                    "(time converted from local time to Europe/Brussels)"
+                )
+            else:
+                start_dt, end_dt = add_hours(current_date, clock, 1)
+                description = "President of the European Council schedule"
             event = Event(
                 title=f"EUCO President | {title.strip()}",
                 start=start_dt,
                 end=end_dt,
                 all_day=False,
                 location=current_location,
-                description="President of the European Council schedule",
+                description=description,
                 url=url,
                 source="EUCO PRESIDENT",
                 priority=priority_from_text(title),
@@ -383,11 +452,7 @@ def parse_euco_president_calendar() -> list[Event]:
                 events.append(event)
             continue
 
-        if line in {"Official visit", "European Council meeting"}:
-            title = line
-        else:
-            title = line
-
+        title = line
         if title and not title.startswith("[") and not title.startswith("http"):
             start_dt, end_dt = all_day_range(current_date)
             event = Event(
@@ -419,9 +484,31 @@ def parse_ep_date(line: str) -> Optional[dt.date]:
     return dt.date(int(year), int(month), int(day))
 
 
+EP_LOCATION_RE = re.compile(r"^[A-Z][\wÀ-ÿ.'’-]+(?:[ -][\wÀ-ÿ.'’-]+)*,\s*[A-Z][\wÀ-ÿ.'’-]+(?:[ -][\wÀ-ÿ.'’-]+)*(?:,\s*[^,]+)?$")
+
+EP_LOCATION_STOPWORDS = (
+    "committee on",
+    "joint meeting",
+    "president ",
+    "meeting with",
+    "meeting of",
+    "conference",
+    "plenary",
+    "debate",
+    "hearing",
+    "session",
+    "report:",
+    "website of",
+)
+
+
 def looks_like_location(line: str) -> bool:
     lowered = norm(line)
-    return any(place in lowered for place in ("brussels", "strasbourg", "luxembourg"))
+    if any(stopword in lowered for stopword in EP_LOCATION_STOPWORDS):
+        return False
+    if any(place in lowered for place in ("brussels", "strasbourg", "luxembourg")):
+        return True
+    return bool(EP_LOCATION_RE.match(line.strip()))
 
 
 def ep_is_control_line(line: str) -> bool:
@@ -506,11 +593,11 @@ def choose_ep_title(section: str, block_lines: list[str]) -> str:
     return cleaned[0].lstrip("* ")
 
 
-def choose_ep_location(block_lines: list[str]) -> str:
+def choose_ep_location(block_lines: list[str], fallback: str = "European Parliament") -> str:
     for line in block_lines:
         if looks_like_location(line):
             return line
-    return "European Parliament"
+    return fallback
 
 
 def parse_ep_weekly_agenda() -> list[Event]:
@@ -523,6 +610,7 @@ def parse_ep_weekly_agenda() -> list[Event]:
     events: list[Event] = []
     current_date: Optional[dt.date] = None
     current_section = ""
+    current_section_location = ""
     start_window, end_window = date_window()
     index = 0
 
@@ -535,15 +623,22 @@ def parse_ep_weekly_agenda() -> list[Event]:
         if maybe_date:
             current_date = maybe_date
             current_section = ""
+            current_section_location = ""
             index += 1
             continue
 
         if line in EP_SECTION_NAMES:
             current_section = line
+            current_section_location = ""
             index += 1
             continue
 
         if current_date is None or current_date < start_window.date() or current_date >= end_window.date():
+            index += 1
+            continue
+
+        if current_section and looks_like_location(line) and not range_re.match(line) and not inline_re.match(line):
+            current_section_location = line
             index += 1
             continue
 
@@ -563,7 +658,7 @@ def parse_ep_weekly_agenda() -> list[Event]:
             start_dt = dt.datetime(current_date.year, current_date.month, current_date.day, start_hour, start_minute, tzinfo=BRUSSELS)
             end_dt = dt.datetime(current_date.year, current_date.month, current_date.day, end_hour, end_minute, tzinfo=BRUSSELS)
             title = choose_ep_title(current_section, block)
-            location = choose_ep_location(block)
+            location = choose_ep_location(block, fallback=current_section_location or "European Parliament")
             event = Event(
                 title=f"EP | {title}",
                 start=start_dt,
@@ -589,7 +684,7 @@ def parse_ep_weekly_agenda() -> list[Event]:
                 start=start_dt,
                 end=end_dt,
                 all_day=False,
-                location="European Parliament",
+                location=current_section_location or "European Parliament",
                 description=f"European Parliament weekly agenda — {current_section}",
                 url=url,
                 source="EP",
@@ -1020,6 +1115,12 @@ def main() -> int:
 
     events = [event for event in all_events if in_window(event, start_window, end_window)]
     deduped = dedupe_events(events)
+    if not deduped:
+        raise SystemExit("No events generated; refusing to overwrite published files.")
+
+    source_counts: dict[str, int] = {}
+    for event in deduped:
+        source_counts[event.source] = source_counts.get(event.source, 0) + 1
 
     root = Path.cwd()
     (root / "brussels.ics").write_text(build_ics(deduped), encoding="utf-8")
@@ -1028,6 +1129,8 @@ def main() -> int:
     write_html(deduped, root / "index.html")
 
     print(f"Wrote {len(deduped)} events")
+    for source, count in sorted(source_counts.items()):
+        print(f"  {source}: {count}")
     return 0
 
 
