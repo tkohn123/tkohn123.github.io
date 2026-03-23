@@ -3,20 +3,25 @@ name: Build Brussels Agenda
 on:
   workflow_dispatch:
   schedule:
-    # Weekdays only (Mon–Fri). Times are UTC.
+    # Weekdays only (Mon-Fri). Times are UTC.
 #    - cron: "15 6 * * 1-5"
 #    - cron: "15 15 * * 1-5"
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-  
+
 permissions:
   contents: write
+
+concurrency:
+  group: brussels-agenda
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"   # optional, but recommended
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -39,6 +44,10 @@ jobs:
         run: |
           git config user.name "brussels-agenda-bot"
           git config user.email "brussels-agenda-bot@users.noreply.github.com"
-          git add brussels.ics brussels.csv index.html 
-          git diff --cached --quiet || git commit -m "Update Brussels agenda (rolling 14d)"
+          git add brussels.ics brussels.csv brussels.json index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "Update Brussels agenda (rolling 30d)"
           git push
